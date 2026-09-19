@@ -1,0 +1,69 @@
+<# Preamble: reuse the uploaded resume's (custom macros, fonts, margins) when available #>
+<% if preamble %>
+<< preamble >>
+<% else %>
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
+\titlespacing*{\section}{0pt}{6pt}{4pt}
+<% endif %>
+
+\begin{document}
+
+<# Header: explicit header_info wins, otherwise the original resume's header #>
+<% if header %>
+\begin{center}
+  {\LARGE \textbf{<< header.get('name', '') | latex >>}} \\[4pt]
+  <% if header.get('email') %><< header.email | latex >><% endif %>
+  <% if header.get('phone') %> | << header.phone | latex >><% endif %>
+  <% if header.get('linkedin') %> | \href{<< header.linkedin >>}{LinkedIn}<% endif %>
+  <% if header.get('github') %> | \href{<< header.github >>}{GitHub}<% endif %>
+  <% if header.get('website') %> | \href{<< header.website >>}{Website}<% endif %>
+\end{center}
+<% elif original_header %>
+<< original_header >>
+<% endif %>
+
+<% for section in sections %>
+<% if section.kind == 'raw' %>
+<# Immutable section (raw LaTeX pass-through) #>
+\section{<< section.name >>}
+<< section.raw_latex >>
+<% elif section.kind == 'skills' %>
+\section{Skills}
+\begin{itemize}[leftmargin=*, nosep]
+<% for skill in section['items'] %>
+  \item \textbf{<< skill.category | latex >>:} << skill['items'] | map('latex') | join(', ') >>
+<% endfor %>
+\end{itemize}
+<% else %>
+<# Mutable section with selected entities #>
+\section{<< section.name | latex >>}
+<% for entity in section.entities %>
+\textbf{<< entity.title | latex >>}<% if entity.subtitle %> -- << entity.subtitle | latex >><% endif %>
+<% if entity.date_range %>\hfill << entity.date_range | latex >><% endif %>
+<% if entity.location %>\\<< entity.location | latex >><% endif %>
+<% if entity.bullets %>
+\begin{itemize}[leftmargin=*, nosep]
+<% for bullet in entity.bullets %>
+  \item << bullet | latex >>
+<% endfor %>
+\end{itemize}
+<% endif %>
+
+<% endfor %>
+<% endif %>
+<% endfor %>
+
+\end{document}
